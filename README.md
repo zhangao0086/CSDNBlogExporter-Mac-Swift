@@ -4,3 +4,9 @@
 
 --
 
+写这个的目的主要是用于了解Swift语言本身，以及如何与Objc和第三方框架交互
+
+### 使用的第三方框架
+1. AFNetworking
+1. GTM
+1. RegExCategories
