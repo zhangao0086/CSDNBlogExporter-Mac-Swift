@@ -16,10 +16,11 @@ class CSDNArticlesSummarySerializer: CSDNTracker {
         self.username = username
         super.init()
         self.isGet = true
+        self.requestURLString = "http://blog.csdn.net/" + self.username + "/article/list/9999?viewmode=contents"
         self.isBatchRequests = false
     }
     
-    override func responseObjectForResponse(response: NSURLResponse!, data: NSData!, error: AutoreleasingUnsafePointer<NSError?>) -> AnyObject! {
+    override func responseObjectForResponse(response: NSURLResponse!, data: NSData!, error: AutoreleasingUnsafeMutablePointer<NSError?>) -> AnyObject! {
         var htmlString = NSString(data: data, encoding: NSUTF8StringEncoding)
         var pattern = NSRegularExpression(pattern: "list_view.*?link_title.*?href=\"(.*?)\">(.*?)</a>.*?link_postdate\">(.*?)</span>",
                                           options: NSRegularExpressionOptions.DotMatchesLineSeparators,
@@ -36,9 +37,5 @@ class CSDNArticlesSummarySerializer: CSDNTracker {
             articles.addObject(article)
         }
         return articles
-    }
-    
-    func requestURLString() -> NSString {
-        return "http://blog.csdn.net/" + self.username + "/article/list/9999?viewmode=contents"
     }
 }

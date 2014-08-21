@@ -10,13 +10,33 @@ import Cocoa
 
 class CSDNLoginSerializer: CSDNTracker {
 
-    var username : NSString = ""
-    var password : NSString = ""
+    var username: NSString = ""
+    var password: NSString = ""
+    
+    override var postParams: NSDictionary {
+        get {
+            var request = NSURLRequest(URL: NSURL(string: self.requestURLString))
+            var data = NSURLConnection.sendSynchronousRequest(request,
+                returningResponse: nil, error: nil)
+            var htmlString = NSString(data: data!, encoding: NSUTF8StringEncoding)
+            return [
+                "username": username,
+                "password": password,
+                "lt": ltTokenByHtmlString(htmlString),
+                "execution": executionByHtmlString(htmlString),
+                "_eventId": "submit"
+            ]
+        }
+        set {
+            super.postParams = newValue
+        }
+    }
 
-    init() {
+    override init() {
         super.init()
         self.isGet = false
         self.isBatchRequests = false
+        self.requestURLString = "https://passport.csdn.net/account/login"
     }
     
     func errorMessageForHtmlString(htmlString: NSString) -> NSString? {
@@ -27,20 +47,12 @@ class CSDNLoginSerializer: CSDNTracker {
     override func responseObjectForResponse(response: NSURLResponse!, data: NSData!, error: NSErrorPointer) -> AnyObject! {
         var htmlString = NSString(data: data, encoding: NSUTF8StringEncoding)
         var errorMessage : NSString? = errorMessageForHtmlString(htmlString)
-        if !errorMessage {
+        if errorMessage == nil {
             return htmlString
         } else {
             error.memory = NSError(domain: "CSDN", code: 999, userInfo: ["errorMessage" : errorMessage!])
             return nil
         }
-    }
-    
-    func requestURLString() -> NSString  {
-        return "https://passport.csdn.net/account/login"
-    }
-    
-    func requestURLStrings() -> NSArray? {
-        return nil
     }
 
     func ltTokenByHtmlString(htmlString : NSString) -> NSString {
@@ -51,19 +63,5 @@ class CSDNLoginSerializer: CSDNTracker {
     func executionByHtmlString(htmlString : NSString) -> NSString {
         var execution = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=\"execution\" value=\").*?(?=\")")) as NSString
         return execution
-    }
-    
-    func postParams() -> NSDictionary {
-        var request = NSURLRequest(URL: NSURL(string: self.requestURLString))
-        var data = NSURLConnection.sendSynchronousRequest(request,
-            returningResponse: nil, error: nil)
-        var htmlString = NSString(data: data, encoding: NSUTF8StringEncoding)
-        return [
-            "username": username,
-            "password": password,
-            "lt": ltTokenByHtmlString(htmlString),
-            "execution": executionByHtmlString(htmlString),
-            "_eventId": "submit"
-        ]
     }
 }

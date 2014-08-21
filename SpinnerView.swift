@@ -11,7 +11,7 @@ import Cocoa
 class SpinnerView: NSView {
     private var spinner = NSProgressIndicator()
     
-    init(frame: NSRect) {
+    override init(frame: NSRect) {
         super.init(frame: frame)
         let spinnerSize = CGSizeMake(40, 40)
         spinner.frame = CGRectMake((frame.size.width - spinnerSize.width) / 2,
@@ -21,16 +21,20 @@ class SpinnerView: NSView {
         
         self.addSubview(spinner)
         self.wantsLayer = true
-        self.layer.backgroundColor = NSColor.lightGrayColor().CGColor
+        self.layer?.backgroundColor = NSColor.lightGrayColor().CGColor
+    }
+
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
     func startAnimation(){
-        self.layer.hidden = false
+        self.layer?.hidden = false
         spinner.startAnimation(spinner)
     }
     
     func stopAnimation(){
-        self.layer.hidden = true
+        self.layer?.hidden = true
         spinner.stopAnimation(spinner)
     }
 

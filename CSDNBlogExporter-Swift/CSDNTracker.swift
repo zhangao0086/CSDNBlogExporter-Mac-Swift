@@ -8,8 +8,8 @@
 //#define MessageInError(error)   (error.userInfo.getObjectForKey:"errorMessage")
 import Cocoa
 
-func errorMessageInError(error: NSError) ->NSString {
-    return (error.userInfo as NSDictionary).objectForKey("errorMessage") as NSString
+func errorMessageInError(error: NSError) -> NSString {
+    return error.userInfo?["errorMessage"] as NSString
 }
 
 class CSDNTracker: AFHTTPResponseSerializer {

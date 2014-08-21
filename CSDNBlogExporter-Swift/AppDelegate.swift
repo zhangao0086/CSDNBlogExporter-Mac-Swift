@@ -55,7 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         notiCenter.deliverNotification(noti)
     }
     
-    private func addMessageLog(message: NSString,_ args: CVarArg...) {
+    private func addMessageLog(message: NSString,_ args: CVarArgType...) {
         var originalString : NSString? = self.messageTextView.string
         var newString : NSString = ""
         var str = NSString(format: message, arguments: getVaList(args))
@@ -74,10 +74,10 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         fileContent.appendString("---\n")
         fileContent.appendString("layout: contentpage\n")
         fileContent.appendFormat("title: %@\n",article.articleTitle!)
-        if !article.categories {
+        if article.categories != nil {
             fileContent.appendFormat("categories: [%@]\n",article.categories!)
         }
-        if !article.tags {
+        if article.tags != nil {
             fileContent.appendFormat("tags: [%@]\n",article.tags!)
         }
         fileContent.appendFormat("date: %@:%02d\n",article.publishTime!,rand() % 60)
@@ -88,13 +88,13 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
     
     private func saveArticle(article: CSDNArticle) {
         addMessageLog("----正在导出《%@》----已导出",article.articleTitle!)
-        assert(article.rawContent)
+        assert(article.rawContent != nil)
         
         var fileContent: NSMutableString = NSMutableString()
         if self.yamlCheckButton.state == NSOnState {
             insertYAMLHeaderForArticle(article, fileContent: fileContent)
         }
-        fileContent.appendString(article.rawContent)
+        fileContent.appendString(article.rawContent!)
         
         var fileNamePrefix: NSString = article.publishTime?.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())[0] as NSString
         var fileName: NSString = article.articleTitle!.stringByReplacingOccurrencesOfString(" ", withString: "-")
@@ -102,7 +102,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         var filePath = self.exportDirectoryURLString?.stringByAppendingPathComponent(fullFileName)
         
         var error: NSError?
-        var success: Bool = fileContent.writeToFile(filePath, atomically: true, encoding: NSUTF8StringEncoding, error: &error)
+        var success: Bool = fileContent.writeToFile(filePath!, atomically: true, encoding: NSUTF8StringEncoding, error: &error)
         if !success {
             NSLog("%@", error!.localizedDescription)
         }

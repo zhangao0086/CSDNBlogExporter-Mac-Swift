@@ -12,6 +12,20 @@ class CSDNArticleSerializer: CSDNTracker {
 
     var articlesSummary : Array<CSDNArticle>
     
+    override var requestURLStrings : Array<String>? {
+        get {
+            var urlStrings = [String](count: articlesSummary.count, repeatedValue: "")
+            var i = 0
+            for articleSummary: CSDNArticle in articlesSummary {
+                urlStrings[i++] = "http://write.blog.csdn.net/postedit/" + articleSummary.articleID!
+            }
+            return urlStrings
+        }
+        set {
+            super.requestURLStrings = newValue
+        }
+    }
+    
     init(articlesSummary: Array<CSDNArticle>) {
         self.articlesSummary = articlesSummary
         super.init()
@@ -48,7 +62,7 @@ class CSDNArticleSerializer: CSDNTracker {
         var htmlString: NSString? = NSString(data: data, encoding: NSUTF8StringEncoding)
         var errorMessage: NSString? = errorMessageForHtmlString(htmlString!)
 
-        if htmlString && (!errorMessage || errorMessage?.isEqualToString("")) {
+        if htmlString != nil && (errorMessage == nil || errorMessage?.isEqualToString("") == true) {
             var articleID = response.URL.lastPathComponent
             var article: CSDNArticle = self.articlesSummary.filter({(includeElement: CSDNArticle!) in
                 return includeElement.articleID!.isEqualToString(articleID)
@@ -60,22 +74,13 @@ class CSDNArticleSerializer: CSDNTracker {
                                                                 options: NSRegularExpressionOptions.DotMatchesLineSeparators,
                                                                 error: nil))
                                 .stringByReplacingPercentEscapesUsingEncoding(NSUTF8StringEncoding)
-            article.sourceType = ArticleSourceType.fromRaw(sourceTypeByHtmlString(jsonString))!
-            article.categories = categoriesByHtmlString(jsonString)
-            article.tags = tagsByHtmlString(jsonString)
+            article.sourceType = ArticleSourceType.fromRaw(sourceTypeByHtmlString(jsonString!))!
+            article.categories = categoriesByHtmlString(jsonString!)
+            article.tags = tagsByHtmlString(jsonString!)
             return article;
         } else {
             error.memory = NSError(domain: "CSDN", code: 998, userInfo: ["errorMessage" : errorMessage!])
             return nil
         }
-    }
-    
-    func requestURLStrings() -> Array<String> {
-        var urlStrings = [String](count: articlesSummary.count, repeatedValue: "")
-        var i = 0
-        for articleSummary: CSDNArticle in articlesSummary {
-            urlStrings[i++] = "http://write.blog.csdn.net/postedit/" + articleSummary.articleID!
-        }
-        return urlStrings
     }
 }
