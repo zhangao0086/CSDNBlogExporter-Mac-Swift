@@ -9,7 +9,7 @@
 import Cocoa
 
 func errorMessageInError(error: NSError) -> NSString {
-    return error.userInfo?["errorMessage"] as NSString
+    return error.userInfo?["errorMessage"] as! NSString
 }
 
 class CSDNTracker: AFHTTPResponseSerializer {
@@ -42,7 +42,7 @@ class CSDNTracker: AFHTTPResponseSerializer {
             var popTime: dispatch_time_t = dispatch_time(DISPATCH_TIME_NOW, (Int64)(delay))
             dispatch_after(popTime, dispatch_get_main_queue(), {
                 var url = NSURL(string: urlString)
-                var request = NSURLRequest(URL: url)
+                var request = NSURLRequest(URL: url!)
                 var operation = AFHTTPRequestOperation(request: request)
                 operation.responseSerializer = self.manager.responseSerializer
                 operation.setCompletionBlockWithSuccess(
@@ -66,7 +66,7 @@ class CSDNTracker: AFHTTPResponseSerializer {
     private func sendSingleRequest(successBlock: requestSuccessBlock, failedBlock: requestFailedBlock) {
         self.manager.responseSerializer = self
         if self.isGet {
-            self.manager.GET(self.requestURLString,
+            self.manager.GET(self.requestURLString as String,
                 parameters: nil,
                 success: {(operation : AFHTTPRequestOperation?, responseObject : AnyObject?) in
                     dispatch_async(dispatch_get_main_queue(), {
@@ -79,7 +79,7 @@ class CSDNTracker: AFHTTPResponseSerializer {
                     })
                 })
         } else {
-            self.manager.POST(self.requestURLString,
+            self.manager.POST(self.requestURLString as String,
                 parameters: self.postParams,
                 success: {(operation : AFHTTPRequestOperation?, responseObject : AnyObject?) in
                     dispatch_async(dispatch_get_main_queue(), {

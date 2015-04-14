@@ -24,7 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
     
     var messageTextView: NSTextView {
         get {
-            return scrollView.contentView.documentView as NSTextView
+            return scrollView.contentView.documentView as! NSTextView
         }
     }
     
@@ -34,22 +34,22 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         return SpinnerView(frame: CGRectMake(0, 0, self.loginSheet!.frame.width, self.loginSheet!.frame.height))
     }()
 
-    func applicationDidFinishLaunching(aNotification: NSNotification?) {
+    func applicationDidFinishLaunching(aNotification: NSNotification) {
         NSBundle.mainBundle().loadNibNamed("LoginPanel",owner:self,topLevelObjects:nil)
     }
 
-    func applicationWillTerminate(aNotification: NSNotification?) {
+    func applicationWillTerminate(aNotification: NSNotification) {
         // Insert code here to tear down your application
     }
     
-    func userNotificationCenter(center: NSUserNotificationCenter!, shouldPresentNotification notification: NSUserNotification!) -> Bool {
+    func userNotificationCenter(center: NSUserNotificationCenter, shouldPresentNotification notification: NSUserNotification) -> Bool {
         return true
     }
     
     private func showTipsTitle(title: NSString?, content: NSString?) {
         var noti = NSUserNotification()
-        noti.title = title
-        noti.informativeText = content
+        noti.title = title as? String
+        noti.informativeText = content as? String
         var notiCenter = NSUserNotificationCenter.defaultUserNotificationCenter()
         notiCenter.delegate = self
         notiCenter.deliverNotification(noti)
@@ -58,14 +58,14 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
     private func addMessageLog(message: NSString,_ args: CVarArgType...) {
         var originalString : NSString? = self.messageTextView.string
         var newString : NSString = ""
-        var str = NSString(format: message, arguments: getVaList(args))
+        var str = NSString(format: message as String, arguments: getVaList(args))
         
         if originalString!.length == 0 {
-            newString = originalString!.stringByAppendingString(str)
+            newString = originalString!.stringByAppendingString(str as String)
         } else {
             newString = originalString!.stringByAppendingFormat("\n%@", str)
         }
-        self.messageTextView.string = newString
+        self.messageTextView.string = newString as String
         self.messageTextView.scrollRangeToVisible(
             NSMakeRange(newString.length,0))
     }
@@ -81,7 +81,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
             fileContent.appendFormat("tags: [%@]\n",article.tags!)
         }
         fileContent.appendFormat("date: %@:%02d\n",article.publishTime!,rand() % 60)
-        fileContent.appendFormat("sourceType: %d",article.sourceType.toRaw())
+        fileContent.appendFormat("sourceType: %d",article.sourceType.rawValue)
         fileContent.appendString("---\n")
         fileContent.appendString("\n")
     }
@@ -94,12 +94,12 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         if self.yamlCheckButton.state == NSOnState {
             insertYAMLHeaderForArticle(article, fileContent: fileContent)
         }
-        fileContent.appendString(article.rawContent!)
+        fileContent.appendString(article.rawContent! as String)
         
-        var fileNamePrefix: NSString = article.publishTime?.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())[0] as NSString
+        var fileNamePrefix: NSString = article.publishTime?.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())[0] as! NSString
         var fileName: NSString = article.articleTitle!.stringByReplacingOccurrencesOfString(" ", withString: "-")
         var fullFileName = NSString(format: "%@-%@.html", fileNamePrefix,fileName)
-        var filePath = self.exportDirectoryURLString?.stringByAppendingPathComponent(fullFileName)
+        var filePath = self.exportDirectoryURLString?.stringByAppendingPathComponent(fullFileName as String)
         
         var error: NSError?
         var success: Bool = fileContent.writeToFile(filePath!, atomically: true, encoding: NSUTF8StringEncoding, error: &error)
@@ -120,7 +120,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         var articlesSummarySerializer = CSDNArticlesSummarySerializer(username: usernameField.stringValue)
         articlesSummarySerializer.sendRequest(
             {(object: AnyObject!, isBatchCompleted: Bool) -> Void in
-                var articles : Array<CSDNArticle> = object as Array<CSDNArticle>
+                var articles : Array<CSDNArticle> = object as! Array<CSDNArticle>
                 self.indicator.doubleValue = 10.0
                 self.indicator.indeterminate = false
                 self.addMessageLog("已获取所有文章的摘要信息")
@@ -142,7 +142,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
                         } else {
                             i++
                             self.indicator.incrementBy(90.0 / Double(articles.count))
-                            self.saveArticle(object as CSDNArticle)
+                            self.saveArticle(object as! CSDNArticle)
                         }
                     }
                     , failedBlock:
@@ -175,7 +175,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         
         if openDLG.runModal() == NSOKButton {
             sender.enabled = false
-            exportDirectoryURLString = openDLG.URL.relativePath
+            exportDirectoryURLString = openDLG.URL!.relativePath
             self.startExporting()
         }
     }

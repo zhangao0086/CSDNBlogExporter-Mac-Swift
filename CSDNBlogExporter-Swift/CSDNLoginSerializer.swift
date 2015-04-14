@@ -13,17 +13,17 @@ class CSDNLoginSerializer: CSDNTracker {
     var username: NSString = ""
     var password: NSString = ""
     
-    override var postParams: NSDictionary {
+    override var postParams: NSDictionary? {
         get {
-            var request = NSURLRequest(URL: NSURL(string: self.requestURLString))
+            var request = NSURLRequest(URL: NSURL(string: self.requestURLString as String)!)
             var data = NSURLConnection.sendSynchronousRequest(request,
                 returningResponse: nil, error: nil)
             var htmlString = NSString(data: data!, encoding: NSUTF8StringEncoding)
             return [
                 "username": username,
                 "password": password,
-                "lt": ltTokenByHtmlString(htmlString),
-                "execution": executionByHtmlString(htmlString),
+                "lt": ltTokenByHtmlString(htmlString!),
+                "execution": executionByHtmlString(htmlString!),
                 "_eventId": "submit"
             ]
         }
@@ -38,6 +38,10 @@ class CSDNLoginSerializer: CSDNTracker {
         self.isBatchRequests = false
         self.requestURLString = "https://passport.csdn.net/account/login"
     }
+
+    required init(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     func errorMessageForHtmlString(htmlString: NSString) -> NSString? {
         var errorMessage : NSString? = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=error-message\">).*?(?=<)"))
@@ -46,7 +50,7 @@ class CSDNLoginSerializer: CSDNTracker {
     
     override func responseObjectForResponse(response: NSURLResponse!, data: NSData!, error: NSErrorPointer) -> AnyObject! {
         var htmlString = NSString(data: data, encoding: NSUTF8StringEncoding)
-        var errorMessage : NSString? = errorMessageForHtmlString(htmlString)
+        var errorMessage : NSString? = errorMessageForHtmlString(htmlString!)
         if errorMessage == nil {
             return htmlString
         } else {

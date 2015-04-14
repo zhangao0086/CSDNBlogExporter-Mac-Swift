@@ -17,7 +17,7 @@ class CSDNArticleSerializer: CSDNTracker {
             var urlStrings = [String](count: articlesSummary.count, repeatedValue: "")
             var i = 0
             for articleSummary: CSDNArticle in articlesSummary {
-                urlStrings[i++] = "http://write.blog.csdn.net/postedit/" + articleSummary.articleID!
+                urlStrings[i++] = "http://write.blog.csdn.net/postedit/" + (articleSummary.articleID! as String)
             }
             return urlStrings
         }
@@ -32,12 +32,16 @@ class CSDNArticleSerializer: CSDNTracker {
         self.isGet = false
         self.isBatchRequests = true
     }
+
+    required init(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     private func rawContentByHtmlString(htmlString: NSString) -> NSString {
         var match: RxMatch = htmlString.firstMatchWithDetails(NSRegularExpression(pattern: "<textarea.*?>(.*?)</textarea>",
                                                     options: NSRegularExpressionOptions.DotMatchesLineSeparators,
                                                     error: nil))
-        var rawEncodedContent: NSString = (match.groups[1] as RxMatchGroup).value()
+        var rawEncodedContent: NSString = (match.groups[1] as! RxMatchGroup).value()
         return rawEncodedContent.stringByDecodingHTMLEntities()
     }
     
@@ -63,9 +67,9 @@ class CSDNArticleSerializer: CSDNTracker {
         var errorMessage: NSString? = errorMessageForHtmlString(htmlString!)
 
         if htmlString != nil && (errorMessage == nil || errorMessage?.isEqualToString("") == true) {
-            var articleID = response.URL.lastPathComponent
+            var articleID = response.URL!.lastPathComponent
             var article: CSDNArticle = self.articlesSummary.filter({(includeElement: CSDNArticle!) in
-                return includeElement.articleID!.isEqualToString(articleID)
+                return includeElement.articleID!.isEqualToString(articleID!)
                 })[0] as CSDNArticle
             
             article.rawContent = rawContentByHtmlString(htmlString!)
@@ -74,7 +78,7 @@ class CSDNArticleSerializer: CSDNTracker {
                                                                 options: NSRegularExpressionOptions.DotMatchesLineSeparators,
                                                                 error: nil))
                                 .stringByReplacingPercentEscapesUsingEncoding(NSUTF8StringEncoding)
-            article.sourceType = ArticleSourceType.fromRaw(sourceTypeByHtmlString(jsonString!))!
+            article.sourceType = ArticleSourceType(rawValue: sourceTypeByHtmlString(jsonString!))!
             article.categories = categoriesByHtmlString(jsonString!)
             article.tags = tagsByHtmlString(jsonString!)
             return article;
