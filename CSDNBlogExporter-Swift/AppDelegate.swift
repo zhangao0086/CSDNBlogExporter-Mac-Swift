@@ -37,6 +37,22 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
     func applicationDidFinishLaunching(aNotification: NSNotification) {
         NSBundle.mainBundle().loadNibNamed("LoginPanel",owner:self,topLevelObjects:nil)
     }
+    
+    func queryDictionaryForQueryString(query: String) -> Dictionary<String, String> {
+        var dictionary = [String: String]()
+        
+        for keyValueString in query.componentsSeparatedByString("&") {
+            var parts = keyValueString.componentsSeparatedByString("=")
+            if parts.count < 2 { continue; }
+            
+            let key = parts[0].stringByRemovingPercentEncoding!
+            let value = parts[1].stringByRemovingPercentEncoding!
+            
+            dictionary[key] = value
+        }
+        
+        return dictionary
+    }
 
     func applicationWillTerminate(aNotification: NSNotification) {
         // Insert code here to tear down your application
@@ -47,18 +63,18 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
     }
     
     private func showTipsTitle(title: NSString?, content: NSString?) {
-        var noti = NSUserNotification()
+        let noti = NSUserNotification()
         noti.title = title as? String
         noti.informativeText = content as? String
-        var notiCenter = NSUserNotificationCenter.defaultUserNotificationCenter()
+        let notiCenter = NSUserNotificationCenter.defaultUserNotificationCenter()
         notiCenter.delegate = self
         notiCenter.deliverNotification(noti)
     }
     
     private func addMessageLog(message: NSString,_ args: CVarArgType...) {
-        var originalString : NSString? = self.messageTextView.string
+        let originalString : NSString? = self.messageTextView.string
         var newString : NSString = ""
-        var str = NSString(format: message as String, arguments: getVaList(args))
+        let str = NSString(format: message as String, arguments: getVaList(args))
         
         if originalString!.length == 0 {
             newString = originalString!.stringByAppendingString(str as String)
@@ -90,19 +106,26 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         addMessageLog("----正在导出《%@》----已导出",article.articleTitle!)
         assert(article.rawContent != nil)
         
-        var fileContent: NSMutableString = NSMutableString()
+        let fileContent: NSMutableString = NSMutableString()
         if self.yamlCheckButton.state == NSOnState {
             insertYAMLHeaderForArticle(article, fileContent: fileContent)
         }
         fileContent.appendString(article.rawContent! as String)
-        
-        var fileNamePrefix: NSString = article.publishTime?.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())[0] as! NSString
-        var fileName: NSString = article.articleTitle!.stringByReplacingOccurrencesOfString(" ", withString: "-")
-        var fullFileName = NSString(format: "%@-%@.html", fileNamePrefix,fileName)
-        var filePath = self.exportDirectoryURLString?.stringByAppendingPathComponent(fullFileName as String)
+		
+        let fileNamePrefix: NSString = article.publishTime!.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()).first!
+        let fileName: NSString = article.articleTitle!.stringByReplacingOccurrencesOfString(" ", withString: "-")
+        let fullFileName = NSString(format: "%@-%@.html", fileNamePrefix,fileName)
+        let filePath = self.exportDirectoryURLString?.stringByAppendingPathComponent(fullFileName as String)
         
         var error: NSError?
-        var success: Bool = fileContent.writeToFile(filePath!, atomically: true, encoding: NSUTF8StringEncoding, error: &error)
+        var success: Bool
+        do {
+            try fileContent.writeToFile(filePath!, atomically: true, encoding: NSUTF8StringEncoding)
+            success = true
+        } catch let error1 as NSError {
+            error = error1
+            success = false
+        }
         if !success {
             NSLog("%@", error!.localizedDescription)
         }
@@ -117,21 +140,21 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
         addMessageLog("开始导出...\n正在访问指定的博客...")
         indicator?.startAnimation(indicator)
         
-        var articlesSummarySerializer = CSDNArticlesSummarySerializer(username: usernameField.stringValue)
+        let articlesSummarySerializer = CSDNArticlesSummarySerializer(username: usernameField.stringValue)
         articlesSummarySerializer.sendRequest(
             {(object: AnyObject!, isBatchCompleted: Bool) -> Void in
-                var articles : Array<CSDNArticle> = object as! Array<CSDNArticle>
+                let articles : Array<CSDNArticle> = object as! Array<CSDNArticle>
                 self.indicator.doubleValue = 10.0
                 self.indicator.indeterminate = false
                 self.addMessageLog("已获取所有文章的摘要信息")
                 
                 for summary in articles {
-                    var title : NSString = summary.articleTitle!
+                    let title : NSString = summary.articleTitle!
                     self.addMessageLog("----%@", title)
                 }
                 self.addMessageLog("共%d篇文章", articles.count)
                 self.addMessageLog("开始导出每一篇文章...")
-                var articlesSerializer = CSDNArticleSerializer(articlesSummary: articles)
+                let articlesSerializer = CSDNArticleSerializer(articlesSummary: articles)
                 var i = 0
                 articlesSerializer.sendRequest(
                     {(object: AnyObject!, isBatchCompleted: Bool) in
@@ -167,7 +190,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
     }
     
     @IBAction func exportButtonClicked(sender: NSButton) {
-        var openDLG = NSOpenPanel()
+        let openDLG = NSOpenPanel()
         openDLG.canChooseDirectories = true
         openDLG.canCreateDirectories = true
         openDLG.canChooseFiles = false
@@ -189,10 +212,10 @@ class AppDelegate: NSObject, NSApplicationDelegate,NSUserNotificationCenterDeleg
             showTipsTitle("提示", content: "密码不能为空")
             return
         }
-        loginSheet?.contentView.addSubview(self.spinner)
+        loginSheet!.contentView!.addSubview(self.spinner)
         spinner.startAnimation()
         
-        var loginSerializer = CSDNLoginSerializer()
+        let loginSerializer = CSDNLoginSerializer()
         loginSerializer.username = usernameField.stringValue
         loginSerializer.password = passwordField.stringValue
         loginSerializer.sendRequest(

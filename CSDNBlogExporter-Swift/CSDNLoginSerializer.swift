@@ -15,10 +15,10 @@ class CSDNLoginSerializer: CSDNTracker {
     
     override var postParams: NSDictionary? {
         get {
-            var request = NSURLRequest(URL: NSURL(string: self.requestURLString as String)!)
-            var data = NSURLConnection.sendSynchronousRequest(request,
-                returningResponse: nil, error: nil)
-            var htmlString = NSString(data: data!, encoding: NSUTF8StringEncoding)
+            let request = NSURLRequest(URL: NSURL(string: self.requestURLString as String)!)
+            let data = try? NSURLConnection.sendSynchronousRequest(request,
+                returningResponse: nil)
+            let htmlString = NSString(data: data!, encoding: NSUTF8StringEncoding)
             return [
                 "username": username,
                 "password": password,
@@ -44,28 +44,30 @@ class CSDNLoginSerializer: CSDNTracker {
     }
     
     func errorMessageForHtmlString(htmlString: NSString) -> NSString? {
-        var errorMessage : NSString? = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=error-message\">).*?(?=<)"))
+        let errorMessage : NSString? = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=error-message\">).*?(?=<)"))
         return errorMessage
     }
-    
-    override func responseObjectForResponse(response: NSURLResponse!, data: NSData!, error: NSErrorPointer) -> AnyObject! {
-        var htmlString = NSString(data: data, encoding: NSUTF8StringEncoding)
-        var errorMessage : NSString? = errorMessageForHtmlString(htmlString!)
-        if errorMessage == nil {
-            return htmlString
-        } else {
-            error.memory = NSError(domain: "CSDN", code: 999, userInfo: ["errorMessage" : errorMessage!])
-            return nil
-        }
+	
+	override func responseObjectForResponse(response: NSURLResponse?, data: NSData?, error: NSErrorPointer) -> AnyObject? {
+		if let data = data {
+			let htmlString = NSString(data: data, encoding: NSUTF8StringEncoding)
+			if let errorMessage = errorMessageForHtmlString(htmlString!) {
+				error.memory = NSError(domain: "CSDN", code: 999, userInfo: ["errorMessage" : errorMessage])
+				return nil
+			} else {
+				return htmlString
+			}
+		}
+		return nil
     }
 
     func ltTokenByHtmlString(htmlString : NSString) -> NSString {
-        var ltToken = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=\"lt\" value=\").*?(?=\")")) as NSString
+        let ltToken = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=\"lt\" value=\").*?(?=\")")) as NSString
         return ltToken
     }
     
     func executionByHtmlString(htmlString : NSString) -> NSString {
-        var execution = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=\"execution\" value=\").*?(?=\")")) as NSString
+        let execution = htmlString.firstMatch(NSRegularExpression(pattern: "(?<=\"execution\" value=\").*?(?=\")")) as NSString
         return execution
     }
 }

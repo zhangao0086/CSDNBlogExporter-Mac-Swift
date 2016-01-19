@@ -38,15 +38,14 @@ class CSDNArticleSerializer: CSDNTracker {
     }
     
     private func rawContentByHtmlString(htmlString: NSString) -> NSString {
-        var match: RxMatch = htmlString.firstMatchWithDetails(NSRegularExpression(pattern: "<textarea.*?>(.*?)</textarea>",
-                                                    options: NSRegularExpressionOptions.DotMatchesLineSeparators,
-                                                    error: nil))
-        var rawEncodedContent: NSString = (match.groups[1] as! RxMatchGroup).value()
+        let match: RxMatch = htmlString.firstMatchWithDetails(try? NSRegularExpression(pattern: "<textarea.*?>(.*?)</textarea>",
+                                                    options: NSRegularExpressionOptions.DotMatchesLineSeparators))
+        let rawEncodedContent: NSString = (match.groups[1] as! RxMatchGroup).value
         return rawEncodedContent.stringByDecodingHTMLEntities()
     }
     
     private func sourceTypeByHtmlString(htmlString: NSString) -> Int {
-        return htmlString.firstMatch(NSRegularExpression(pattern: "(?<=type:')\\d(?=')")).toInt()!
+        return Int(htmlString.firstMatch(NSRegularExpression(pattern: "(?<=type:')\\d(?=')")))!
     }
     
     private func categoriesByHtmlString(htmlString: NSString) -> NSString {
@@ -58,33 +57,32 @@ class CSDNArticleSerializer: CSDNTracker {
     }
     
     private func errorMessageForHtmlString(htmlString: NSString) -> NSString? {
-        var errorMessage : NSString? = htmlString.firstMatch(NSRegularExpression(pattern: "Service Temporarily Unavailable"))
-        return errorMessage
-    }
-    
-    override func responseObjectForResponse(response: NSURLResponse!, data: NSData!, error: NSErrorPointer) -> AnyObject! {
-        var htmlString: NSString? = NSString(data: data, encoding: NSUTF8StringEncoding)
-        var errorMessage: NSString? = errorMessageForHtmlString(htmlString!)
-
-        if htmlString != nil && (errorMessage == nil || errorMessage?.isEqualToString("") == true) {
-            var articleID = response.URL!.lastPathComponent
-            var article: CSDNArticle = self.articlesSummary.filter({(includeElement: CSDNArticle!) in
-                return includeElement.articleID!.isEqualToString(articleID!)
-                })[0] as CSDNArticle
-            
-            article.rawContent = rawContentByHtmlString(htmlString!)
-            
-            var jsonString = htmlString!.firstMatch(NSRegularExpression(pattern: "(?<=jsonData=)\\{.*?\\}",
-                                                                options: NSRegularExpressionOptions.DotMatchesLineSeparators,
-                                                                error: nil))
-                                .stringByReplacingPercentEscapesUsingEncoding(NSUTF8StringEncoding)
-            article.sourceType = ArticleSourceType(rawValue: sourceTypeByHtmlString(jsonString!))!
-            article.categories = categoriesByHtmlString(jsonString!)
-            article.tags = tagsByHtmlString(jsonString!)
-            return article;
-        } else {
-            error.memory = NSError(domain: "CSDN", code: 998, userInfo: ["errorMessage" : errorMessage!])
-            return nil
-        }
-    }
+        let errorMessage : NSString? = htmlString.firstMatch(NSRegularExpression(pattern: "Service Temporarily Unavailable"))
+		return errorMessage
+	}
+	
+	override func responseObjectForResponse(response: NSURLResponse?, data: NSData?, error: NSErrorPointer) -> AnyObject? {
+		if let data = data, let htmlString = NSString(data: data, encoding: NSUTF8StringEncoding) {
+			let errorMessage: NSString? = errorMessageForHtmlString(htmlString)
+			
+			if (errorMessage == nil || errorMessage?.isEqualToString("") == true) {
+				let articleID = response!.URL!.fragment?.componentsSeparatedByString("=").last
+				let article: CSDNArticle = self.articlesSummary.filter({(includeElement: CSDNArticle!) in
+					return includeElement.articleID!.isEqualToString(articleID!)
+				}).first!
+				
+				article.rawContent = rawContentByHtmlString(htmlString)
+				
+				let jsonString = htmlString.firstMatch(try? NSRegularExpression(pattern: "(?<=jsonData=)\\{.*?\\}",
+					options: NSRegularExpressionOptions.DotMatchesLineSeparators))
+					.stringByRemovingPercentEncoding
+				article.sourceType = ArticleSourceType(rawValue: sourceTypeByHtmlString(jsonString!))!
+				article.categories = categoriesByHtmlString(jsonString!)
+				article.tags = tagsByHtmlString(jsonString!)
+				return article;
+			}
+		}
+		return nil
+	}
+	
 }
